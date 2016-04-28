@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <stdexcept>
+#include "covnet.h"
 namespace ai {
 	template < typename T > void print(const T &);
 	std::string getline();
@@ -78,7 +79,7 @@ namespace ai {
 	};
 
 	bool silent = false;
-	std::string version="1.16.50";
+	std::string version = "1.16.50";
 	std::string robot_name = "Covariant Ai";
 	std::string owner_name = "用户";
 	std::string record_dir = "record.txt";
@@ -220,6 +221,75 @@ react:
 		print("[Message]加载数据成功。\n");
 	}
 
+	void download_data()
+	{
+		try {
+			cov::net::Http socket("ldc.atd3.cn", "/covai/record.txt");
+			if (!socket.download()) {
+				print("[Error]无法下载数据，请检查您的网络。\n");
+				return;
+			}
+			std::string key;
+			std::string tmp;
+			std::vector < std::string > record;
+			while (std::getline(socket.stream(), tmp)) {
+				record.push_back(tmp);
+			}
+			print("[Message]数据下载成功。\n");
+			for (int i = 0; i < record.size();) {
+				if (record[i][0] == '$') {
+					key = record[i].substr(1);
+					++i;
+					for (; i < record.size() && record[i][0] != '$'; ++i) {
+						tmp.clear();
+						std::string::size_type pos = record[i].find('&');
+						int count = atoi(record[i].substr(0, pos).c_str());
+						data[key][neuron::unformat(record[i].substr(pos + 1))] = count;
+					}
+					continue;
+				}
+				if (record[i][0] == '#') {
+					silent = true;
+					parse_macro(record[i]);
+					silent = false;
+					++i;
+					continue;
+				}
+				++i;
+			}
+			print("[Message]加载数据成功。\n");
+		} catch(...) {
+			print("[Error]无法下载数据，请检查您的网络。\n");
+			return;
+		}
+	}
+
+	void help()
+	{
+		print("Covariant人工智能聊天机器人 使用说明\n"
+		      "Covariant人工智能机器人是基于关键词加权数据库模拟神经元实现的，理论上具有初级智力。\n"
+		      "您需要不断的帮助机器人学习才能增加机器人的智商。\n"
+		      "机器人指令说明:\n"
+		      "#Save FILE 将数据库保存至本地文件，将抹除文件内所有内容，如文件不存在则会被创建。如果不指定文件将保存至预设文件内\n"
+		      "#Load FILE 从本地文件中读取数据，数据库中现有内容将不会被抹除。如果不指定文件将从预设文件中读取\n"
+		      "#Sync 从Internet上下载官方数据库，数据库中现有内容将不会被抹除\n"
+		      "#Record FILE 更改预设本地文件路径\n"
+		      "#Robot_Name NAME 更改机器人的名字，将被保存到本地数据库中\n"
+		      "#Owner_Name NAME 更改用户的名字，将被保存到本地数据库中\n"
+		      "#Learn 学习模式\n"
+		      "#Help 获取支持\n#Clrscr 清理当前屏幕\n");
+		print("学习模式说明:\n"
+		      "您需要将需要提供被匹配的关键词和这些关键词统一的回答。您将可以为每一个关键词选择这个回答对于这个关键词是什么类型以及权值。\n"
+		      "一个关键词的回答有两种类型，一种是数据，对应的代码是#DAT\n"
+		      "另一种是跳转，对应的代码是#ACT\n"
+		      "数据将被直接输出到屏幕上，而跳转将被重新放入解析器中匹配。通过跳转您能够构建复杂的逻辑体系\n"
+		      "权值则是关键词匹配的关键。数据库将根据一个回答的权值来决定是否执行这个回答。您要减少回答的权值只需设置为负数即可。您对于一个回答强调的次数越多则机器人会更偏向于给予这个回答\n"
+		      "跳转类型的回答可以是机器人指令，您可以教机器人一些话来代替输入指令。\n"
+		      "版权所有 2016 (C) Covariant Studio\n"
+		      "感谢@星翼 提供人工智能思路，@Kiva 提供网络通信支持\n"
+		      "获取支持请访问 https://github.com/mikecovlee/covai\n");
+	}
+
 	void parse_macro(const std::string & usrinput)
 	{
 		std::vector < std::string > args = split(usrinput);
@@ -241,6 +311,11 @@ react:
 				print("[Message]存档文件目录现在是:\"", record_dir, "\"\n");
 			}
 			load_data();
+			return;
+		}
+		if (args[0] == "#Sync") {
+			print("[Message]正在从服务器下载数据…\n");
+			download_data();
 			return;
 		}
 		if (args[0] == "#Record") {
@@ -270,6 +345,10 @@ react:
 		}
 		if (args[0] == "#Learn") {
 			learn();
+			return;
+		}
+		if (args[0] == "#Help") {
+			help();
 			return;
 		}
 		if (args[0] == "#Clrscr") {
@@ -318,7 +397,10 @@ void ai::clrscr()
 
 int main()
 {
-	ai::print("Covariant简单人工智能聊天机器人\n版本:",ai::version,"\n");
+	std::ios_base::sync_with_stdio(false);
+	ai::print("Covariant人工智能聊天机器人\n版本:", ai::version,
+	          "\n[Message]正在从服务器下载数据…\n");
+	ai::download_data();
 	while (true) {
 		ai::print('[', ai::owner_name, "]:");
 		ai::parse(ai::getline());
