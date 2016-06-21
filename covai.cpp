@@ -4,7 +4,6 @@
 #include <cstdlib>
 #include <fstream>
 #include <stdexcept>
-#include "covnet.h"
 namespace ai {
 	template < typename T > void print(const T &);
 	std::string getline();
@@ -221,49 +220,6 @@ react:
 		print("[Message]加载数据成功。\n");
 	}
 
-	void download_data()
-	{
-		try {
-			cov::net::Http socket("ldc.atd3.cn", "/covai/record.txt");
-			if (!socket.download()) {
-				print("[Error]无法下载数据，请检查您的网络。\n");
-				return;
-			}
-			std::string key;
-			std::string tmp;
-			std::vector < std::string > record;
-			while (std::getline(socket.stream(), tmp)) {
-				record.push_back(tmp);
-			}
-			print("[Message]数据下载成功。\n");
-			for (int i = 0; i < record.size();) {
-				if (record[i][0] == '$') {
-					key = record[i].substr(1);
-					++i;
-					for (; i < record.size() && record[i][0] != '$'; ++i) {
-						tmp.clear();
-						std::string::size_type pos = record[i].find('&');
-						int count = atoi(record[i].substr(0, pos).c_str());
-						data[key][neuron::unformat(record[i].substr(pos + 1))] = count;
-					}
-					continue;
-				}
-				if (record[i][0] == '#') {
-					silent = true;
-					parse_macro(record[i]);
-					silent = false;
-					++i;
-					continue;
-				}
-				++i;
-			}
-			print("[Message]加载数据成功。\n");
-		} catch(...) {
-			print("[Error]无法下载数据，请检查您的网络。\n");
-			return;
-		}
-	}
-
 	void help()
 	{
 		print("Covariant人工智能聊天机器人 使用说明\n"
@@ -311,11 +267,6 @@ react:
 				print("[Message]存档文件目录现在是:\"", record_dir, "\"\n");
 			}
 			load_data();
-			return;
-		}
-		if (args[0] == "#Sync") {
-			print("[Message]正在从服务器下载数据…\n");
-			download_data();
 			return;
 		}
 		if (args[0] == "#Record") {
@@ -398,9 +349,7 @@ void ai::clrscr()
 int main()
 {
 	std::ios_base::sync_with_stdio(false);
-	ai::print("Covariant人工智能聊天机器人\n版本:", ai::version,
-	          "\n[Message]正在从服务器下载数据…\n");
-	ai::download_data();
+	ai::print("Covariant人工智能聊天机器人\n版本:", ai::version,'\n');
 	while (true) {
 		ai::print('[', ai::owner_name, "]:");
 		ai::parse(ai::getline());
