@@ -81,7 +81,7 @@ namespace ai {
 	std::string version = "1.16.50";
 	std::string robot_name = "Covariant Ai";
 	std::string owner_name = "用户";
-	std::string record_dir = "record.txt";
+	std::string record_dir = "./CovAi/record.txt";
 	std::map < std::string, std::map < neuron, int >>data;
 
 	void learn(const std::string & keyword, const neuron & answer, int weight = 1)
@@ -346,10 +346,13 @@ void ai::clrscr()
 	print("\x1B[2J\x1B[0;0f");
 }
 
-int main()
+int main(int args,char** argv)
 {
 	std::ios_base::sync_with_stdio(false);
 	ai::print("Covariant人工智能聊天机器人\n版本:", ai::version,'\n');
+	if(args>1)
+		ai::record_dir = argv[1];
+	ai::load_data();
 	while (true) {
 		ai::print('[', ai::owner_name, "]:");
 		ai::parse(ai::getline());

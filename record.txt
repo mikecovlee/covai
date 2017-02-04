@@ -1,3 +1,5 @@
+#Robot_Name Covariant Ai
+#Owner_Name 用户
 $AGE
 1&#DAT?一岁吧
 $SEX
@@ -24,6 +26,8 @@ $学习
 1&#ACT?#Learn
 $屏幕
 1&#ACT?#Clrscr
+$帮助
+2&#ACT?#Help
 $我
 1&#ACT?#Owner_Name
 $是谁
